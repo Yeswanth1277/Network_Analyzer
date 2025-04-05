@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Packet Sniffer Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+            font-size: 14px; /* Slightly smaller base font */
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            table-layout: fixed; /* Helps control column widths */
+        }
+        th, td {
+            padding: 10px 12px; /* Adjust padding */
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+            word-wrap: break-word; /* Allow long words to break */
+            overflow-wrap: break-word;
+            hyphens: auto; /* Help break words */
+        }
+        th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+            color: #333;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        #error-message {
+            text-align: center;
+            color: red;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px; /* Adjust margin */
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        form {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Add space between elements */
+        }
+        form label {
+            font-weight: bold;
+        }
+        form input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            flex-grow: 1; /* Allow input to take available space */
+        }
+
+        /* Style for rows containing threats */
+        .threat-detected {
+            background-color: #fff0f0 !important; /* Lighter red background */
+        }
+        /* Add colored border based on severity */
+        .threat-High { border-left: 5px solid red; }
+        .threat-Medium { border-left: 5px solid orange; }
+        .threat-Low { border-left: 5px solid #FFEB3B; } /* Yellow */
+        .threat-Unknown { border-left: 5px solid grey; }
+
+
+        /* Style for threat detail columns */
+        td.threat-details {
+            font-size: 0.9em;
+            color: #444;
+        }
+        td.severity-High { font-weight: bold; color: red; }
+        td.severity-Medium { font-weight: bold; color: orange; }
+        td.severity-Low { color: #8c7703; } /* Darker yellow text */
+
+        /* Define column widths (adjust percentages as needed) */
+        #packets-table th:nth-child(1), #packets-table td:nth-child(1) { width: 5%; }  /* ID */
+        #packets-table th:nth-child(2), #packets-table td:nth-child(2) { width: 12%; } /* Src IP */
+        #packets-table th:nth-child(3), #packets-table td:nth-child(3) { width: 12%; } /* Src Loc */
+        #packets-table th:nth-child(4), #packets-table td:nth-child(4) { width: 12%; } /* Dst IP */
+        #packets-table th:nth-child(5), #packets-table td:nth-child(5) { width: 12%; } /* Dst Loc */
+        #packets-table th:nth-child(6), #packets-table td:nth-child(6) { width: 7%; }  /* Proto */
+        #packets-table th:nth-child(7), #packets-table td:nth-child(7) { width: 15%; } /* Payload */
+        #packets-table th:nth-child(8), #packets-table td:nth-child(8) { width: 8%; }  /* Threat ID */
+        #packets-table th:nth-child(9), #packets-table td:nth-child(9) { width: 12%; } /* Threat Desc */
+        #packets-table th:nth-child(10), #packets-table td:nth-child(10){ width: 5%; }  /* Severity */
+
+
+    </style>
+</head>
+<body>
+    <h1>Captured Packets Dashboard</h1>
+
+    <!-- Filter Form for Protocol -->
+    <form method="get" action="/">
+        <label for="protocol">Filter by Protocol:</label>
+        <input type="text" id="protocol" name="protocol" placeholder="e.g., TCP, UDP, ICMP (case-insensitive)">
+        <button type="submit">Apply Filter</button>
+        <button type="button" onclick="window.location.href='/'">Clear Filter</button> <!-- Added Clear Button -->
+    </form>
+
+    <!-- Download PCAP File Button -->
+    <button onclick="downloadPcap()">Download PCAP</button>
+
+    <!-- Table for displaying packets -->
+    <table id="packets-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Source IP</th>
+                <th>Source Location</th>
+                <th>Destination IP</th>
+                <th>Destination Location</th>
+                <th>Protocol</th>
+                <th>Payload Snippet</th> <!-- Renamed -->
+                <!-- New Threat Headers -->
+                <th>Threat ID</th>
+                <th>Description</th>
+                <th>Severity</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Rows will be dynamically added here -->
+        </tbody>
+    </table>
+
+    <div id="error-message"></div> <!-- Placeholder for errors -->
+
+    <script>
+        // Set the protocol filter input value from URL parameters on load
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const params = new URLSearchParams(window.location.search);
+            const protocolParam = params.get('protocol');
+            if (protocolParam) {
+                document.getElementById('protocol').value = protocolParam;
+            }
+            fetchPackets(); // Initial fetch
+        });
+
+
+        function fetchPackets() {
+            const params = new URLSearchParams(window.location.search);
+            const protocol = params.get('protocol') || ''; // Get protocol or empty string
+            const errorMessageDiv = document.getElementById('error-message');
+            errorMessageDiv.textContent = ''; // Clear previous errors
+
+            // Construct URL safely encoding parameters
+            const fetchUrl = `/packets?protocol=${encodeURIComponent(protocol)}`;
+
+            fetch(fetchUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        // Try to get error message from response body
+                        return response.text().then(text => {
+                            throw new Error(`HTTP error! Status: ${response.status} - ${text || 'No details'}`);
+                        });
+                    }
+                    return response.json();
+                 })
+                .then(data => {
+                    const tableBody = document.getElementById('packets-table').getElementsByTagName('tbody')[0];
+                    tableBody.innerHTML = ''; // Clear existing rows
+
+                    if (!Array.isArray(data)) {
+                        console.error('Received non-array data:', data);
+                        errorMessageDiv.textContent = 'Error: Received invalid data format from server.';
+                        return;
+                    }
+
+                    if (data.length === 0) {
+                         tableBody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: grey;">No packets found matching the criteria.</td></tr>`;
+                         return;
+                    }
+
+                    data.forEach(packet => {
+                        const row = tableBody.insertRow();
+
+                        // --- Apply Threat Styling ---
+                        if (packet.threat_id) {
+                            row.classList.add('threat-detected');
+                            // Add severity specific class for border styling
+                            const severityClass = `threat-${packet.threat_severity || 'Unknown'}`;
+                            row.classList.add(severityClass);
+                        }
+
+                        // --- Populate Cells ---
+                        row.insertCell(0).textContent = packet.id;
+                        row.insertCell(1).textContent = packet.src_ip;
+                        row.insertCell(2).textContent = `${packet.src_geo?.city || '?'}, ${packet.src_geo?.country || '?'}`; // Use optional chaining
+                        row.insertCell(3).textContent = packet.dst_ip;
+                        row.insertCell(4).textContent = `${packet.dst_geo?.city || '?'}, ${packet.dst_geo?.country || '?'}`; // Use optional chaining
+                        row.insertCell(5).textContent = packet.protocol;
+
+                        // Payload Snippet
+                        const payloadCell = row.insertCell(6);
+                        const payloadSnippet = packet.payload ? packet.payload.substring(0, 60) + (packet.payload.length > 60 ? '...' : '') : 'N/A';
+                        payloadCell.textContent = payloadSnippet;
+                        if(packet.payload) payloadCell.title = packet.payload; // Show full payload on hover
+
+                        // Threat ID
+                        const threatIdCell = row.insertCell(7);
+                        threatIdCell.textContent = packet.threat_id || '-'; // Use '-' for empty
+                        threatIdCell.classList.add('threat-details');
+
+                        // Threat Description
+                        const threatDescCell = row.insertCell(8);
+                        threatDescCell.textContent = packet.threat_description || '-';
+                        threatDescCell.classList.add('threat-details');
+                        if (packet.threat_description) threatDescCell.title = packet.threat_description; // Full description on hover
+
+                        // Threat Severity
+                        const threatSevCell = row.insertCell(9);
+                        const severity = packet.threat_severity || 'N/A';
+                        threatSevCell.textContent = severity;
+                        threatSevCell.classList.add('threat-details');
+                        // Apply text color/style based on severity
+                        if (packet.threat_severity) {
+                             threatSevCell.classList.add(`severity-${packet.threat_severity}`);
+                        }
+
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching packets:', error);
+                    const tableBody = document.getElementById('packets-table').getElementsByTagName('tbody')[0];
+                    tableBody.innerHTML = ''; // Clear table
+                    errorMessageDiv.textContent = `Error loading packet data: ${error.message}`;
+                });
+        }
+
+        function downloadPcap() {
+            window.location.href = "/download_pcap";
+        }
+
+        // Fetch packets every 5 seconds
+        setInterval(fetchPackets, 5000);
+        // Initial fetch is now handled by DOMContentLoaded listener
+
+    </script>
+</body>
+</html>
