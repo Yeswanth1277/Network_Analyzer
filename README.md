@@ -32,33 +32,10 @@ The system operates with two main threads:
 2.   Main Thread:  Runs the Flask web server, serving the UI and handling API requests to fetch data from the database or provide the PCAP download.
 
  (Optional: You can embed or link to the architecture diagram image here if you add it to your repository) 
-<!-- ![Architecture Diagram](architecture_diagram.png) -->
 
   Directory Structure (`data/` Folder)
 
 The application relies on a specific structure within the `data/` directory. You will need to create some of these directories and files yourself.
-Use code with caution.
-Markdown
-net-tool/
-├── data/
-│ ├── geoip/
-│ │ └── GeoLite2-City.mmdb <-- You need to download and place this file here
-│ ├── logs/ <-- Directory will be created automatically
-│ │ ├── database.log <-- Created automatically by db_handler
-│ │ ├── sniffer.log <-- Created automatically by packet_sniffer
-│ │ └── threats.log <-- Created automatically by threat_detection
-│ ├── signatures/
-│ │ └── basic_threats.json <-- You need to create this file (see example below)
-│ ├── captured_packets.pcap <-- Created automatically by packet_sniffer
-│ └── packets.db <-- Created automatically by db_handler
-├── src/
-│ ├── analysis/
-│ ├── capture/
-│ ├── ui/
-│ └── utils/
-├── run.py
-├── requirements.txt <-- You need to create this file
-└── README.md
 
 Files/Folders to Create/Provide in `data/`:
 
@@ -88,7 +65,7 @@ Files/Folders to Create/Provide in `data/`:
     "type": "Command Injection"
   }
 ]
-Use code with caution.
+
 (Note: protocol and port are optional filters in the signature.)
 
 Setup and Installation
@@ -114,7 +91,7 @@ Clone the Repository:
 
 git clone <your-repository-url>
 cd net-tool
-Use code with caution.
+
 Bash
 Create requirements.txt:
 Create a file named requirements.txt in the project root (net-tool/) with the following content (adjust versions if needed):
@@ -123,7 +100,7 @@ Flask>=2.0
 scapy>=2.4.5
 geoip2>=4.1.0
 requests>=2.25.0
-Use code with caution.
+
 Txt
 Install Python Dependencies:
 It's recommended to use a virtual environment:
@@ -137,7 +114,7 @@ python -m venv venv
 
   Install requirements
 pip install -r requirements.txt
-Use code with caution.
+
 Bash
 Download GeoLite2 Database:
 Download the GeoLite2-City.mmdb file from MaxMind (see link in "Directory Structure" section) and place it inside the data/geoip/ directory.
@@ -156,7 +133,7 @@ $env:ABUSEIPDB_API_KEY="YOUR_API_KEY_HERE"
 
   Linux/macOS
 export ABUSEIPDB_API_KEY=YOUR_API_KEY_HERE
-Use code with caution.
+
 Bash
 (Note: You might need to set this persistently depending on your system.) If the key is not set, reputation checks will be skipped.
 
@@ -166,7 +143,7 @@ Open Terminal as Administrator: Right-click your terminal (Command Prompt, Power
 Navigate to Project Root:
 
 cd path/to/your/net-tool
-Use code with caution.
+
 Bash
 Activate Virtual Environment (if you created one):
 
@@ -174,13 +151,12 @@ Activate Virtual Environment (if you created one):
 .\venv\Scripts\activate
   Linux/macOS:
   source venv/bin/activate
-Use code with caution.
+
 Bash
 Run the Application:
 Use the -m flag to run run as a module, which helps Python resolve imports correctly:
 
 python -m run
-Use code with caution.
 Bash
 Access the Web UI: Open your web browser and go to http://127.0.0.1:5000.
 
