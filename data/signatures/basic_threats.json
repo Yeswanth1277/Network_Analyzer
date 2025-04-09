@@ -1,0 +1,57 @@
+[
+  {
+    "signature_id": "SIM-SQLi-001",
+    "description": "Simulated SQL Injection Attempt (UNION SELECT)",
+    "pattern": "(?:'|%27)\\s*(?:union|select)\\s",
+    "protocol": "TCP",
+    "port": [80, 443, 8080, 5000], 
+    "severity": "High",
+    "type": "Web Attack Simulation"
+  },
+  {
+    "signature_id": "SIM-XSS-001",
+    "description": "Simulated Cross-Site Scripting (Script Tag)",
+    "pattern": "<script.*?>", 
+    "protocol": "TCP",
+    "port": [80, 443, 8080, 5000], 
+    "type": "Web Attack Simulation"
+  },
+  {
+    "signature_id": "THREAT-001",
+    "description": "Potential SQL Injection Attempt (' OR '1'='1)",
+    "pattern": "'\\s+OR\\s+'1'='1",
+    "type": "SQL Injection",
+    "severity": "High",
+    "protocol": "TCP",  
+    "port": [80, 443, 8080, 5000] 
+  },
+  {
+    "signature_id": "THREAT-002",
+    "description": "Potential XSS Attempt (<script>)",
+    "pattern": "<\\s*script\\s*>",
+    "type": "Cross-Site Scripting",
+    "severity": "Medium"
+    
+  },
+  {
+    "signature_id": "THREAT-003",
+    "description": "Potential Directory Traversal (../)",
+    "pattern": "\\.\\./",
+    "type": "Directory Traversal",
+    "severity": "Medium"
+  },
+  {
+    "signature_id": "THREAT-004",
+    "description": "Potential Shell Command Injection (nc -e)",
+    "pattern": "nc\\s+-e", 
+    "type": "Command Injection",
+    "severity": "Critical"
+  },
+  {
+    "signature_id": "THREAT-005",
+    "description": "Nmap Scan Signature (-sS)",
+    "pattern": "\\x4e\\x6d\\x61\\x70", 
+    "type": "Scanning",
+    "severity": "Low"
+  }
+]
